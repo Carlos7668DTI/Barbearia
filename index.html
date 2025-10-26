@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Agendamento - Francisco Cabeleireiro</title>
+<link href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css" rel="stylesheet">
+<style>
+    body {
+        font-family: 'Poppins', sans-serif;
+        background: linear-gradient(180deg, #0d0d0d, #1a1a1a);
+        color: #fff;
+        margin: 0;
+        padding: 0;
+        display: flex;
+        justify-content: center;
+        align-items: flex-start;
+        min-height: 100vh;
+    }
+
+    .container {
+        margin-top: 40px;
+        background: #111;
+        border-radius: 20px;
+        padding: 30px 40px;
+        max-width: 450px;
+        width: 100%;
+        box-shadow: 0 0 15px rgba(255, 215, 0, 0.4);
+        border: 1px solid #FFD700;
+    }
+
+    h1 {
+        text-align: center;
+        color: #FFD700;
+        font-size: 1.8em;
+        margin-bottom: 10px;
+    }
+
+    p {
+        text-align: center;
+        color: #bbb;
+        margin-bottom: 20px;
+    }
+
+    label {
+        display: block;
+        margin-top: 15px;
+        color: #FFD700;
+        font-weight: 500;
+    }
+
+    input, select {
+        width: 100%;
+        padding: 10px;
+        border: none;
+        border-radius: 8px;
+        margin-top: 5px;
+        background: #222;
+        color: #fff;
+    }
+
+    input:focus, select:focus {
+        outline: 2px solid #FFD700;
+    }
+
+    #valor {
+        text-align: right;
+        color: #FFD700;
+        font-size: 1.1em;
+        font-weight: bold;
+        margin-top: 10px;
+    }
+
+    #horarios {
+        margin-top: 20px;
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 10px;
+    }
+
+    .hora {
+        text-align: center;
+        padding: 10px;
+        border-radius: 8px;
+        cursor: pointer;
+        transition: transform 0.2s, background 0.2s;
+    }
+
+    .disponivel {
+        background-color: #28a745;
+    }
+
+    .reservado {
+        background-color: #dc3545;
+        cursor: not-allowed;
+        opacity: 0.7;
+    }
+
+    .hora:hover.disponivel {
+        background-color: #34d058;
+        transform: scale(1.05);
+    }
+
+    .botao {
+        margin-top: 20px;
+        width: 100%;
+        background-color: #FFD700;
+        border: none;
+        padding: 12px;
+        border-radius: 8px;
+        font-weight: bold;
+        cursor: pointer;
+        color: #000;
+        font-size: 1em;
+        transition: background 0.3s;
+    }
+
+    .botao:hover {
+        background-color: #ffcc00;
+    }
+</style>
+</head>
+<body>
+<div class="container">
+    <h1>Francisco Cabeleireiro</h1>
+    <p>Agende seu horário com facilidade</p>
+
+    <label>Nome:</label>
+    <input type="text" id="nome" placeholder="Seu nome completo">
+
+    <label>Telefone:</label>
+    <input type="text" id="telefone" placeholder="(DDD) 90000-0000">
+
+    <label>Serviço:</label>
+    <select id="servico" onchange="atualizarValor()">
+        <option value="">Selecione</option>
+        <option value="10">Acabamento (Pezinho) - R$ 10,00</option>
+        <option value="25">Corte de cabelo - R$ 25,00</option>
+        <option value="30">Cabelo + Barba - R$ 30,00</option>
+       -----------------------------------------------------------------------------
+    </select>
+
+    <div id="valor"></div>
+
+    <label>Selecione o dia:</label>
+    <input type="text" id="data" placeholder="Escolha a data">
+
+    <div id="horarios"></div>
+
+    <button class="botao" onclick="confirmarAgendamento()">Confirmar Agendamento</button>
+</div>
+
+<!-- Scripts -->
+<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+<script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/pt.js"></script>
+<script>
+    const dataInput = document.getElementById("data");
+    const horariosDiv = document.getElementById("horarios");
+    const valorDiv = document.getElementById("valor");
+    const servicoSelect = document.getElementById("servico");
+
+    const horariosFixos = {
+        segunda: ["09:30","10:00","11:00","12:00","13:00","14:00","15:00","16:00","17:00","18:00","19:00"],
+        sabado: ["08:30","09:00","10:00","11:00","12:00","13:00","14:00","15:00","16:00","17:00","18:00","19:00","20:00"]
+    };
+
+    const horariosReservados = {
+        "2025-10-27": ["09:30", "11:00", "15:00"],
+        "2025-10-28": ["10:00", "13:00"],
+        "2025-10-30": ["09:30", "18:00"]
+    };
+
+    flatpickr(dataInput, {
+        dateFormat: "Y-m-d",
+        minDate: "today",
+        locale: "pt", // usa o idioma carregado
+        disable: [
+            function(date) {
+                return (date.getDay() === 0); // desativa domingo
+            }
+        ],
+        onChange: function(selectedDates, dateStr) {
+            mostrarHorarios(dateStr);
+        }
+    });
+
+    function atualizarValor() {
+        const valor = servicoSelect.value;
+        valorDiv.textContent = valor ? `Valor: R$ ${Number(valor).toFixed(2)}` : "";
+    }
+
+    function mostrarHorarios(data) {
+        horariosDiv.innerHTML = "";
+        const dia = new Date(data).getDay();
+        let horarios = (dia === 6) ? horariosFixos.sabado : horariosFixos.segunda;
+
+        horarios.forEach(hora => {
+            const reservado = horariosReservados[data]?.includes(hora);
+            const div = document.createElement("div");
+            div.textContent = hora;
+            div.classList.add("hora", reservado ? "reservado" : "disponivel");
+            if (!reservado) div.onclick = () => selecionarHorario(div);
+            horariosDiv.appendChild(div);
+        });
+    }
+
+    let horarioSelecionado = null;
+
+    function selecionarHorario(div) {
+        document.querySelectorAll(".hora").forEach(el => el.style.outline = "none");
+        div.style.outline = "2px solid #FFD700";
+        horarioSelecionado = div.textContent;
+    }
+
+    function confirmarAgendamento() {
+        const nome = document.getElementById("nome").value;
+        const telefone = document.getElementById("telefone").value;
+        const servico = servicoSelect.options[servicoSelect.selectedIndex].text;
+        const valor = servicoSelect.value;
+        const data = dataInput.value;
+
+        if (!nome || !telefone || !servico || !data || !horarioSelecionado) {
+            alert("⚠️ Preencha todos os campos e selecione um horário disponível!");
+            return;
+        }
+
+        const chavePix = "chavepix@franciscocabeleireiro.com";
+
+        alert(`✅ Agendamento confirmado!\n\n💇 Cliente: ${nome}\n📅 Data: ${data}\n🕒 Horário: ${horarioSelecionado}\n💈 Serviço: ${servico}\n💵 Total: R$ ${Number(valor).toFixed(2)}\n\n🔑 Chave Pix: ${chavePix}`);
+    }
+</script>
+</body>
+</html>
